@@ -17,7 +17,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [loading, setLoading] = useState(true);
-    const [searching, setSearching] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
