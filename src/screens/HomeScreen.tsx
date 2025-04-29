@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, FlatList, TextInput, ActivityIndicator, TouchableOpacity, StyleSheet } from "react-native";
 import axios from 'axios';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from "../../App";
 import MovieItem from '../components/MovieItem';
-import { RouteProp } from '@react-navigation/native';
+import MovieService, { Movie } from "../services/MovieService";
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -12,31 +12,25 @@ interface Props {
     navigation: HomeScreenNavigationProp;
 }
 
-interface Movie {
-    id: number;
-    title: string;
-    year: number;
-    director: string;
-}
-
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
     const [movies, setMovies] = useState<Movie[]>([]);
     const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
-  
+    const [searchQuery, setSearchQuery] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [searching, setSearching] = useState(false);
+    const [error, setError] = useState("");
+
     useEffect(() => {
-      fetchMovies();
+      loadMovies();
     }, []);
   
-    const fetchMovies = async () => {
+    const loadMovies = async () => {
       try {
         setLoading(true);
-        const response = await axios.get<Movie[]>('https://www.freetestapi.com/api/v1/movies');
-        setMovies(response.data);
-        setFilteredMovies(response.data);
-      } catch (err) {
+        const allMovies = await MovieService.getAllMovies();
+        setMovies(allMovies);
+        setFilteredMovies(allMovies);
+      } catch {
         setError('Failed to load movies.');
       } finally {
         setLoading(false);
@@ -45,11 +39,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   
     const handleSearch = async (text: string) => {
       setSearchQuery(text);
-      if (text.length > 0) {
+      if (text.trim()) {
         try {
-          const response = await axios.get<Movie[]>(`https://www.freetestapi.com/api/v1/movies?search=${text}`);
-          setFilteredMovies(response.data);
-        } catch (err) {
+          const results = await MovieService.searchMovies(text);
+          setFilteredMovies(results);
+        } catch {
           setError('Failed to search movies.');
         }
       } else {
@@ -69,6 +63,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       );
     }
   
+  
     return (
       <View style={styles.container}>
         <TextInput
@@ -86,7 +81,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           )}
         />
-      </View>
+    </View>
     );
   };
 
@@ -96,16 +91,41 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     },
     searchBar: {
       height: 50,
-      borderColor: '#ccc',
+      borderColor: "#ccc",
       borderWidth: 1,
       margin: 10,
       paddingHorizontal: 15,
       borderRadius: 8,
     },
+    searchLoading: {
+      marginLeft: 15,
+      marginBottom: 10,
+    },
     centered: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
+      justifyContent: "center",
+      alignItems: "center",
+      padding: 20,
+    },
+    errorText: {
+      color: "red",
+      fontSize: 16,
+      marginBottom: 10,
+    },
+    retryButton: {
+      backgroundColor: "#007bff",
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 6,
+    },
+    retryText: {
+      color: "#fff",
+      fontWeight: "bold",
+    },
+    noResults: {
+      textAlign: "center",
+      marginTop: 20,
+      color: "#666",
     },
   });
   

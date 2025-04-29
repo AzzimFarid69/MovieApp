@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator, ScrollView, StyleSheet } from 'react-native';
 import axios from 'axios';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../App';
+import MovieService, { MovieDetail } from '../services/MovieService';
 
 type DetailScreenRouteProp = RouteProp<RootStackParamList, 'Details'>;
 
@@ -10,37 +11,27 @@ interface Props {
   route: DetailScreenRouteProp;
 }
 
-interface MovieDetail {
-  id: number;
-  title: string;
-  year: number;
-  director: string;
-  genre: string;
-  plot: string;
-  rating: string;
-}
-
 const DetailScreen: React.FC<Props> = ({ route }) => {
   const { id } = route.params;
   const [movie, setMovie] = useState<MovieDetail | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchMovie();
-  }, []);
+    const loadMovie = async () => {
+      try {
+        setLoading(true);
+        const data = await MovieService.getMovieById(id);
+        setMovie(data);
+      } catch {
+        setError('Failed to load movie details.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const fetchMovie = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get<MovieDetail>(`https://www.freetestapi.com/api/v1/movies/${id}`);
-      setMovie(response.data);
-    } catch (err) {
-      setError('Failed to load movie details.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    loadMovie();
+  }, [id]);
 
   if (loading) {
     return <ActivityIndicator size="large" style={{ marginTop: 20 }} />;
